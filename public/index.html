@@ -1,30 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Static Website</title>
-    <link rel="stylesheet" href="style.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Joseph - Personal Website</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script defer src="scripts/main.js"></script>
-</head>
-<body>
-    <section id="section1" class="page-section">
-        <h1>Welcome to Section 1</h1>
-        <p>Content for section 1 goes here.</p>
-    </section>
-    
-    <section id="section2" class="page-section">
-        <h1>Welcome to Section 2</h1>
-        <p>Content for section 2 goes here.</p>
-    </section>
-    
-    <section id="section3" class="page-section">
-        <h1>Welcome to Section 3</h1>
-        <p>Content for section 3 goes here.</p>
+  </head>
+  <body>
+    <!-- Navigation Menu -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <div class="nav-logo">
+          <a href="#home">Joseph</a>
+        </div>
+        <ul class="nav-menu" id="nav-menu">
+          <li class="nav-item">
+            <a href="#home" class="nav-link">Home</a>
+          </li>
+          <li class="nav-item">
+            <a href="#about" class="nav-link">About</a>
+          </li>
+          <li class="nav-item">
+            <a href="#skills" class="nav-link">Skills</a>
+          </li>
+          <li class="nav-item">
+            <a href="#contact" class="nav-link">Contact</a>
+          </li>
+        </ul>
+        <div class="nav-toggle" id="nav-toggle">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="section home-section">
+      <div class="home-content">
+        <div class="home-text">
+          <h1 class="home-title">
+            <span class="gradient-text">Hi, I'm Joseph</span>
+          </h1>
+          <p class="home-subtitle">Developer & Student</p>
+          <p class="home-description">
+            Learning and building with Java, Flutter, and Firebase
+          </p>
+          <div class="home-buttons">
+            <a href="#skills" class="btn btn-primary">View My Skills</a>
+            <a href="#contact" class="btn btn-secondary">Get In Touch</a>
+          </div>
+        </div>
+        <div class="home-image">
+          <div class="floating-card">
+            <div class="card-content">
+              <div class="avatar-circle">
+                <div class="avatar-glow"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-indicator">
+        <div class="mouse"></div>
+      </div>
+      <div class="particles" id="particles"></div>
     </section>
 
-    <section id="counter" class="page-section">
-        <h1>Counter</h1>
-        <p>Count: <span id="count">0</span></p>
-</body>
+    <!-- About Section -->
+    <section id="about" class="section about-section">
+      <div class="container">
+        <h2 class="section-title">
+          <span class="title-number">01.</span>
+          About Me
+        </h2>
+        <div class="about-content">
+          <div class="about-text">
+            <p class="about-description">
+              I'm a developer with experience in Java and mobile development
+              using Flutter. I'm currently learning and expanding my skills in
+              these technologies while building practical applications.
+            </p>
+            <p class="about-description">
+              I have solid experience with Java and some familiarity with
+              Flutter and Firebase. I'm always eager to learn more and take on
+              new challenges in software development.
+            </p>
+            <div class="about-stats">
+              <div class="stat-item">
+                <div class="stat-number" data-target="3">0</div>
+                <div class="stat-label">Technologies</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number" data-target="1">0</div>
+                <div class="stat-label">Primary Language</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number" data-target="2">0</div>
+                <div class="stat-label">Learning</div>
+              </div>
+            </div>
+          </div>
+          <div class="about-image">
+            <div class="image-frame">
+              <div class="frame-glow"></div>
+              <div class="about-placeholder">
+                <span>Your Photo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section id="skills" class="section skills-section">
+      <div class="container">
+        <h2 class="section-title">
+          <span class="title-number">02.</span>
+          Skills & Technologies
+        </h2>
+        <div class="skills-container">
+          <div class="skill-category">
+            <h3 class="category-title">Programming Languages</h3>
+            <div class="skills-grid">
+              <div class="skill-item">
+                <div class="skill-icon">☕</div>
+                <div class="skill-name">Java</div>
+                <div class="skill-bar">
+                  <div class="skill-progress" data-width="85"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="skill-category">
+            <h3 class="category-title">Web Development</h3>
+            <div class="skills-grid">
+              <div class="skill-item">
+                <div class="skill-icon">📱</div>
+                <div class="skill-name">Flutter</div>
+                <div class="skill-bar">
+                  <div class="skill-progress" data-width="50"></div>
+                </div>
+              </div>
+              <div class="skill-item">
+                <div class="skill-icon">🔥</div>
+                <div class="skill-name">Firebase</div>
+                <div class="skill-bar">
+                  <div class="skill-progress" data-width="40"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="section contact-section">
+      <div class="container">
+        <h2 class="section-title">
+          <span class="title-number">03.</span>
+          Get In Touch
+        </h2>
+        <div class="contact-content">
+          <div class="contact-info">
+            <h3 class="contact-title">Let's Work Together</h3>
+            <p class="contact-description">
+              I'm always interested in new opportunities and exciting projects.
+              Whether you have a question or just want to say hi, feel free to
+              reach out!
+            </p>
+            <div class="contact-methods">
+              <a href="mailto:joseph.p.baca8@gmail.com" class="contact-method">
+                <div class="method-icon">📧</div>
+                <div class="method-text">
+                  <div class="method-label">Email</div>
+                  <div class="method-value">joseph.p.baca8@gmail.com</div>
+                </div>
+              </a>
+              <a
+                href="https://github.com/jbaca1-ship-it"
+                class="contact-method"
+                target="_blank"
+              >
+                <div class="method-icon">💻</div>
+                <div class="method-text">
+                  <div class="method-label">GitHub</div>
+                  <div class="method-value">github.com/jbaca1-ship-it</div>
+                </div>
+              </a>
+            </div>
+          </div>
+          <form class="contact-form">
+            <div class="form-group">
+              <input
+                type="text"
+                class="form-input"
+                placeholder="Your Name"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <input
+                type="email"
+                class="form-input"
+                placeholder="Your Email"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <input
+                type="text"
+                class="form-input"
+                placeholder="Subject"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <textarea
+                class="form-input form-textarea"
+                placeholder="Your Message"
+                rows="5"
+                required
+              ></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p class="footer-text">Built with ❤️ by Joseph | © 2025</p>
+      </div>
+    </footer>
+  </body>
 </html>
