@@ -485,6 +485,24 @@ body {
     height: 200px;
     position: relative;
     overflow: hidden;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.project-icon {
+    font-size: 4rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 .project-placeholder {
@@ -497,6 +515,10 @@ body {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.project-content {
+    padding: 2rem;
 }
 
 .project-overlay {
@@ -535,8 +557,12 @@ body {
 
 .project-title {
     font-size: 1.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
     color: var(--text-primary);
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .project-description {
@@ -549,6 +575,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .tag {
@@ -558,6 +585,12 @@ body {
     border-radius: 15px;
     font-size: 0.85rem;
     border: 1px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.tag:hover {
+    background: rgba(99, 102, 241, 0.4);
+    transform: translateY(-2px);
 }
 
 /* ==================== 
