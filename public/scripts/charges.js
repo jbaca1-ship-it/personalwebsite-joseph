@@ -12,7 +12,7 @@ const FIELD_LINE_STEP_SIZE = 0.08; // Step size for field line integration
 let scene, camera, renderer, controls;
 let chargedObjects = [];
 let fieldLines = [];
-let selectedObjectType = null;
+let placementMode = false; // Start with placement mode off
 let currentCharge = 5.0; // in µC
 let raycaster, mouse;
 
@@ -42,9 +42,11 @@ class ChargedObject {
                 material = new THREE.MeshPhongMaterial({
                     color: color,
                     emissive: color,
-                    emissiveIntensity: 0.3,
+                    emissiveIntensity: 0.4,
                     transparent: true,
-                    opacity: 0.9
+                    opacity: 0.95,
+                    shininess: 100,
+                    specular: 0x888888
                 });
                 break;
 
@@ -53,9 +55,11 @@ class ChargedObject {
                 material = new THREE.MeshPhongMaterial({
                     color: color,
                     emissive: color,
-                    emissiveIntensity: 0.2,
+                    emissiveIntensity: 0.3,
                     transparent: true,
-                    opacity: 0.85
+                    opacity: 0.9,
+                    shininess: 80,
+                    specular: 0x666666
                 });
                 break;
 
@@ -64,10 +68,12 @@ class ChargedObject {
                 material = new THREE.MeshPhongMaterial({
                     color: color,
                     emissive: color,
-                    emissiveIntensity: 0.2,
+                    emissiveIntensity: 0.3,
                     transparent: true,
-                    opacity: 0.7,
-                    side: THREE.DoubleSide
+                    opacity: 0.75,
+                    side: THREE.DoubleSide,
+                    shininess: 60,
+                    specular: 0x555555
                 });
                 break;
 
@@ -76,9 +82,11 @@ class ChargedObject {
                 material = new THREE.MeshPhongMaterial({
                     color: color,
                     emissive: color,
-                    emissiveIntensity: 0.3,
+                    emissiveIntensity: 0.4,
                     transparent: true,
-                    opacity: 0.85
+                    opacity: 0.9,
+                    shininess: 90,
+                    specular: 0x777777
                 });
                 break;
         }
@@ -87,17 +95,34 @@ class ChargedObject {
         this.mesh.position.copy(this.position);
         this.mesh.userData.chargedObject = this;
         
-        // Add glow effect
+        // Rotate rod to be horizontal instead of vertical
+        if (this.type === 'rod') {
+            this.mesh.rotation.z = Math.PI / 2; // Rotate 90 degrees to make horizontal
+        }
+        
+        // Add enhanced glow effect
         const glowGeometry = geometry.clone();
         const glowMaterial = new THREE.MeshBasicMaterial({
             color: color,
             transparent: true,
-            opacity: 0.2,
+            opacity: 0.25,
             side: THREE.BackSide
         });
         const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.scale.set(1.2, 1.2, 1.2);
+        glow.scale.set(1.3, 1.3, 1.3);
         this.mesh.add(glow);
+        
+        // Add inner glow
+        const innerGlowGeometry = geometry.clone();
+        const innerGlowMaterial = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.15,
+            side: THREE.BackSide
+        });
+        const innerGlow = new THREE.Mesh(innerGlowGeometry, innerGlowMaterial);
+        innerGlow.scale.set(1.15, 1.15, 1.15);
+        this.mesh.add(innerGlow);
 
         scene.add(this.mesh);
     }
@@ -135,7 +160,7 @@ class ChargedObject {
     }
 
     getRodField(point) {
-        // Simplified: treat as line of point charges
+        // Simplified: treat as line of point charges (horizontal rod along X-axis)
         const field = new THREE.Vector3();
         const numSegments = 10;
         const rodLength = 2;
@@ -143,7 +168,7 @@ class ChargedObject {
         
         for (let i = 0; i < numSegments; i++) {
             const t = (i / (numSegments - 1) - 0.5) * rodLength;
-            const segmentPos = this.position.clone().add(new THREE.Vector3(0, t, 0));
+            const segmentPos = this.position.clone().add(new THREE.Vector3(t, 0, 0));
             
             const r = new THREE.Vector3().subVectors(point, segmentPos);
             const distance = r.length();
@@ -210,12 +235,12 @@ class FieldLine {
     constructor(startPos, direction, isBackward = false) {
         this.points = [];
         this.line = null;
+        this.isBackward = isBackward;
         this.generate(startPos, direction, isBackward);
     }
 
     generate(startPos, direction, isBackward) {
         let currentPos = startPos.clone();
-        let currentDir = direction.clone().normalize();
         
         this.points.push(currentPos.clone());
         
@@ -225,32 +250,53 @@ class FieldLine {
             
             if (field.length() < 1e-4) break; // Field too weak
             
-            // Normalize field direction
-            currentDir = field.clone().normalize();
+            // Get field direction
+            let fieldDir = field.clone().normalize();
             
             // If backward (toward negative charge), reverse direction
             if (isBackward) {
-                currentDir.multiplyScalar(-1);
+                fieldDir.negate();
             }
             
-            // Use RK4 integration for smoother lines
-            const k1 = currentDir.clone().multiplyScalar(FIELD_LINE_STEP_SIZE);
-            const k2Pos = currentPos.clone().add(k1.clone().multiplyScalar(0.5));
-            const k2Field = getTotalElectricField(k2Pos).normalize();
-            const k2 = (isBackward ? k2Field.multiplyScalar(-1) : k2Field).multiplyScalar(FIELD_LINE_STEP_SIZE);
+            // RK4 integration for accurate field line tracing
+            const h = FIELD_LINE_STEP_SIZE;
             
-            const k3Pos = currentPos.clone().add(k2.clone().multiplyScalar(0.5));
-            const k3Field = getTotalElectricField(k3Pos).normalize();
-            const k3 = (isBackward ? k3Field.multiplyScalar(-1) : k3Field).multiplyScalar(FIELD_LINE_STEP_SIZE);
+            // k1 = h * f(t, y)
+            const k1 = fieldDir.clone().multiplyScalar(h);
             
-            const k4Pos = currentPos.clone().add(k3);
-            const k4Field = getTotalElectricField(k4Pos).normalize();
-            const k4 = (isBackward ? k4Field.multiplyScalar(-1) : k4Field).multiplyScalar(FIELD_LINE_STEP_SIZE);
+            // k2 = h * f(t + h/2, y + k1/2)
+            const pos2 = currentPos.clone().add(k1.clone().multiplyScalar(0.5));
+            let field2 = getTotalElectricField(pos2);
+            if (field2.length() < 1e-6) break;
+            field2.normalize();
+            if (isBackward) field2.negate();
+            const k2 = field2.multiplyScalar(h);
             
-            // Combine using RK4 formula
-            const step = k1.add(k2.multiplyScalar(2)).add(k3.multiplyScalar(2)).add(k4).multiplyScalar(1/6);
+            // k3 = h * f(t + h/2, y + k2/2)
+            const pos3 = currentPos.clone().add(k2.clone().multiplyScalar(0.5));
+            let field3 = getTotalElectricField(pos3);
+            if (field3.length() < 1e-6) break;
+            field3.normalize();
+            if (isBackward) field3.negate();
+            const k3 = field3.multiplyScalar(h);
+            
+            // k4 = h * f(t + h, y + k3)
+            const pos4 = currentPos.clone().add(k3.clone());
+            let field4 = getTotalElectricField(pos4);
+            if (field4.length() < 1e-6) break;
+            field4.normalize();
+            if (isBackward) field4.negate();
+            const k4 = field4.multiplyScalar(h);
+            
+            // y_next = y + (k1 + 2*k2 + 2*k3 + k4) / 6
+            const step = new THREE.Vector3()
+                .add(k1)
+                .add(k2.clone().multiplyScalar(2))
+                .add(k3.clone().multiplyScalar(2))
+                .add(k4)
+                .multiplyScalar(1/6);
+            
             currentPos.add(step);
-            
             this.points.push(currentPos.clone());
             
             // Check if we've gone too far
@@ -278,16 +324,80 @@ class FieldLine {
         
         const geometry = new THREE.BufferGeometry().setFromPoints(this.points);
         
-        // Color based on direction - cyan for forward, magenta for backward
+        // Create gradient-like effect with opacity based on position
+        const colors = [];
+        const opacities = [];
+        
+        for (let i = 0; i < this.points.length; i++) {
+            const t = i / (this.points.length - 1);
+            // Fade out at the ends
+            const opacity = Math.sin(t * Math.PI) * 0.8 + 0.2;
+            colors.push(0, 0.87, 1); // Cyan RGB
+            opacities.push(opacity);
+        }
+        
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        
         const material = new THREE.LineBasicMaterial({
             color: 0x00ddff,
             transparent: true,
-            opacity: 0.6,
-            linewidth: 2
+            opacity: 0.7,
+            linewidth: 2,
+            vertexColors: false
         });
         
         this.line = new THREE.Line(geometry, material);
         scene.add(this.line);
+        
+        // Add directional arrows along the line
+        this.addArrows();
+    }
+    
+    addArrows() {
+        if (this.points.length < 10) return;
+        
+        // Add arrows at intervals along the line
+        const arrowInterval = Math.floor(this.points.length / 4); // 3-4 arrows per line
+        
+        for (let i = arrowInterval; i < this.points.length - 5; i += arrowInterval) {
+            const point = this.points[i];
+            const nextPoint = this.points[i + 3]; // Look ahead for direction
+            
+            // Calculate direction vector along the line
+            let direction = new THREE.Vector3().subVectors(nextPoint, point).normalize();
+            
+            // If this is a backward-traced line (to negative charge),
+            // reverse the arrow direction so it points TOWARD the charge
+            if (this.isBackward) {
+                direction.multiplyScalar(-1);
+            }
+            
+            // Create arrow cone geometry with better appearance
+            const coneGeometry = new THREE.ConeGeometry(0.08, 0.2, 12);
+            const coneMaterial = new THREE.MeshPhongMaterial({
+                color: 0x00ddff,
+                emissive: 0x00aacc,
+                emissiveIntensity: 0.3,
+                transparent: true,
+                opacity: 0.85,
+                shininess: 100,
+                specular: 0x88ccff
+            });
+            
+            const arrow = new THREE.Mesh(coneGeometry, coneMaterial);
+            arrow.position.copy(point);
+            
+            // Orient the cone in the direction of the field
+            const axis = new THREE.Vector3(0, 1, 0);
+            const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
+            arrow.setRotationFromQuaternion(quaternion);
+            
+            scene.add(arrow);
+            
+            // Store arrow reference so we can remove it later
+            if (!this.arrows) this.arrows = [];
+            this.arrows.push(arrow);
+        }
     }
 
     remove() {
@@ -295,6 +405,16 @@ class FieldLine {
             scene.remove(this.line);
             this.line.geometry.dispose();
             this.line.material.dispose();
+        }
+        
+        // Remove arrows
+        if (this.arrows) {
+            this.arrows.forEach(arrow => {
+                scene.remove(arrow);
+                arrow.geometry.dispose();
+                arrow.material.dispose();
+            });
+            this.arrows = [];
         }
     }
 }
@@ -473,7 +593,18 @@ function initThreeJS() {
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a1a);
-    scene.fog = new THREE.Fog(0x0a0a1a, 10, 50);
+    scene.fog = new THREE.Fog(0x0a0a1a, 15, 50);
+    
+    // Add subtle background gradient effect
+    const bgGeometry = new THREE.SphereGeometry(45, 32, 32);
+    const bgMaterial = new THREE.MeshBasicMaterial({
+        color: 0x1a1a3e,
+        side: THREE.BackSide,
+        transparent: true,
+        opacity: 0.3
+    });
+    const bgSphere = new THREE.Mesh(bgGeometry, bgMaterial);
+    scene.add(bgSphere);
     
     // Camera
     camera = new THREE.PerspectiveCamera(
@@ -490,6 +621,7 @@ function initThreeJS() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
+    renderer.domElement.style.cursor = 'grab'; // Default cursor (placement off)
     document.getElementById('canvas-container').appendChild(renderer.domElement);
     
     // Controls
@@ -499,24 +631,49 @@ function initThreeJS() {
     controls.minDistance = 2;
     controls.maxDistance = 30;
     
+    // Update cursor during interaction
+    controls.addEventListener('start', () => {
+        if (!placementMode) {
+            renderer.domElement.style.cursor = 'grabbing';
+        }
+    });
+    controls.addEventListener('end', () => {
+        renderer.domElement.style.cursor = placementMode ? 'crosshair' : 'grab';
+    });
+    
     // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
     
-    const pointLight1 = new THREE.PointLight(0x6366f1, 1, 100);
+    const pointLight1 = new THREE.PointLight(0x6366f1, 1.5, 100);
     pointLight1.position.set(10, 10, 10);
+    pointLight1.castShadow = true;
     scene.add(pointLight1);
     
-    const pointLight2 = new THREE.PointLight(0xec4899, 0.8, 100);
+    const pointLight2 = new THREE.PointLight(0xec4899, 1.2, 100);
     pointLight2.position.set(-10, -10, -10);
+    pointLight2.castShadow = true;
     scene.add(pointLight2);
     
-    // Grid Helper
-    const gridHelper = new THREE.GridHelper(20, 20, 0x333366, 0x222244);
+    const pointLight3 = new THREE.PointLight(0x8b5cf6, 0.8, 80);
+    pointLight3.position.set(0, 15, 0);
+    scene.add(pointLight3);
+    
+    // Directional light for better depth
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    dirLight.position.set(5, 10, 7.5);
+    scene.add(dirLight);
+    
+    // Grid Helper with better styling
+    const gridHelper = new THREE.GridHelper(20, 20, 0x4444aa, 0x222255);
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = 0.3;
     scene.add(gridHelper);
     
-    // Axes Helper
-    const axesHelper = new THREE.AxesHelper(5);
+    // Subtle axes helper
+    const axesHelper = new THREE.AxesHelper(3);
+    axesHelper.material.transparent = true;
+    axesHelper.material.opacity = 0.5;
     scene.add(axesHelper);
     
     // Raycaster for object placement
@@ -535,7 +692,7 @@ function onWindowResize() {
 }
 
 function onCanvasClick(event) {
-    if (!selectedObjectType) return;
+    if (!placementMode) return;
     
     // Calculate mouse position
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -550,8 +707,8 @@ function onCanvasClick(event) {
     raycaster.ray.intersectPlane(plane, intersectPoint);
     
     if (intersectPoint) {
-        // Create new charged object
-        const newObject = new ChargedObject(selectedObjectType, intersectPoint, currentCharge);
+        // Create new charged sphere
+        const newObject = new ChargedObject('sphere', intersectPoint, currentCharge);
         chargedObjects.push(newObject);
         updateVisualizations();
     }
@@ -561,15 +718,6 @@ function onCanvasClick(event) {
 // UI CONTROLS
 // ====================
 function setupControls() {
-    // Object type selection
-    document.querySelectorAll('.control-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedObjectType = btn.dataset.type;
-        });
-    });
-    
     // Charge slider
     const chargeSlider = document.getElementById('charge-slider');
     const chargeValue = document.getElementById('charge-value');
@@ -589,6 +737,10 @@ function setupControls() {
             if (toggleType === 'field-lines') {
                 showFieldLines = toggle.classList.contains('active');
                 updateVisualizations();
+            } else if (toggleType === 'placement-mode') {
+                placementMode = toggle.classList.contains('active');
+                // Update cursor based on placement mode
+                renderer.domElement.style.cursor = placementMode ? 'crosshair' : 'grab';
             }
         });
     });
@@ -602,25 +754,65 @@ function loadPreset(presetName) {
     
     switch(presetName) {
         case 'dipole':
-            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-2, 0, 0), 5));
-            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(2, 0, 0), -5));
+            // Simple electric dipole - opposite charges
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-2, 0, 0), 6));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(2, 0, 0), -6));
             break;
             
         case 'quadrupole':
+            // Four charges in a square pattern - alternating signs
             chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-2, 0, -2), 5));
             chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(2, 0, -2), -5));
             chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-2, 0, 2), -5));
             chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(2, 0, 2), 5));
             break;
             
-        case 'parallel':
-            chargedObjects.push(new ChargedObject('plane', new THREE.Vector3(0, 2, 0), 8));
-            chargedObjects.push(new ChargedObject('plane', new THREE.Vector3(0, -2, 0), -8));
+        case 'triangle':
+            // Equilateral triangle - two positive, one negative
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(0, 0, -2.3), 6));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-2, 0, 1.15), 6));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(2, 0, 1.15), -8));
             break;
             
-        case 'ring':
-            chargedObjects.push(new ChargedObject('ring', new THREE.Vector3(0, 0, 0), 7));
-            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(0, 2, 0), -2));
+        case 'line':
+            // Linear array of alternating charges
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-4, 0, 0), 5));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-2, 0, 0), -5));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(0, 0, 0), 5));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(2, 0, 0), -5));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(4, 0, 0), 5));
+            break;
+            
+        case 'hexagon':
+            // Six charges in a hexagonal pattern around center
+            const radius = 3;
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                const charge = (i % 2 === 0) ? 5 : -5; // Alternating charges
+                chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(x, 0, z), charge));
+            }
+            break;
+            
+        case 'surrounded':
+            // Central positive charge surrounded by negative charges
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(0, 0, 0), 8));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(2.5, 0, 0), -4));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-2.5, 0, 0), -4));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(0, 0, 2.5), -4));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(0, 0, -2.5), -4));
+            break;
+            
+        case 'complex':
+            // Complex asymmetric configuration
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-3, 0, -3), 7));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(3, 0, -3), -4));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-3, 0, 3), -4));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(3, 0, 3), 7));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(0, 0, 0), -6));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(-1.5, 0, 0), 3));
+            chargedObjects.push(new ChargedObject('sphere', new THREE.Vector3(1.5, 0, 0), 3));
             break;
     }
     
@@ -649,6 +841,20 @@ function resetCamera() {
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
+    
+    // Subtle pulsing animation for charged objects
+    const time = Date.now() * 0.001;
+    chargedObjects.forEach((obj, index) => {
+        if (obj.mesh) {
+            const pulse = Math.sin(time * 2 + index) * 0.02 + 1;
+            obj.mesh.children.forEach(child => {
+                if (child.material && child.material.transparent) {
+                    child.scale.set(pulse * 1.2, pulse * 1.2, pulse * 1.2);
+                }
+            });
+        }
+    });
+    
     renderer.render(scene, camera);
 }
 
@@ -660,9 +866,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupControls();
     animate();
     
-    // Load a default preset
+    // Load a default preset with smooth fade-in
     setTimeout(() => {
         loadPreset('dipole');
-    }, 500);
+    }, 800);
 });
 

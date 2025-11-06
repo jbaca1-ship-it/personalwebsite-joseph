@@ -38,8 +38,20 @@
         min-width: 280px;
         max-width: 320px;
         backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
         z-index: 1000;
+        animation: slideInLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
       }
 
       #info-panel h2 {
@@ -78,22 +90,53 @@
         cursor: pointer;
         font-family: "Poppins", sans-serif;
         font-size: 0.9em;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         font-weight: 500;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .control-btn::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+      }
+
+      .control-btn:hover::before {
+        width: 300px;
+        height: 300px;
       }
 
       .control-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5);
       }
 
       .control-btn:active {
-        transform: translateY(0);
+        transform: translateY(0) scale(0.98);
       }
 
       .control-btn.active {
         background: linear-gradient(135deg, #ec4899, #f97316);
-        box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+        box-shadow: 0 0 25px rgba(236, 72, 153, 0.6);
+        animation: pulse-active 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse-active {
+        0%,
+        100% {
+          box-shadow: 0 0 25px rgba(236, 72, 153, 0.6);
+        }
+        50% {
+          box-shadow: 0 0 35px rgba(236, 72, 153, 0.8);
+        }
       }
 
       .slider-container {
@@ -205,12 +248,19 @@
         cursor: pointer;
         font-family: "Poppins", sans-serif;
         font-size: 0.85em;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 500;
       }
 
       .action-btn:hover {
         background: rgba(236, 72, 153, 0.4);
         border-color: rgba(236, 72, 153, 0.6);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+      }
+
+      .action-btn:active {
+        transform: translateY(0) scale(0.98);
       }
 
       #formula-panel {
@@ -223,9 +273,21 @@
         padding: 15px 20px;
         color: white;
         backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
         font-size: 0.9em;
         max-width: 350px;
+        animation: slideInBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      @keyframes slideInBottom {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       #formula-panel h3 {
@@ -247,37 +309,90 @@
         background: rgba(15, 15, 35, 0.95);
         border: 2px solid rgba(99, 102, 241, 0.3);
         border-radius: 12px;
-        padding: 20px;
+        padding: 15px;
         color: white;
-        min-width: 200px;
+        min-width: 180px;
+        max-width: 200px;
         backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+        box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        animation: slideInRight 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+
+      #presets-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      #presets-panel::-webkit-scrollbar-track {
+        background: rgba(99, 102, 241, 0.1);
+        border-radius: 3px;
+      }
+
+      #presets-panel::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.5);
+        border-radius: 3px;
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
       }
 
       #presets-panel h3 {
-        margin: 0 0 15px 0;
-        font-size: 1em;
+        margin: 0 0 12px 0;
+        font-size: 0.95em;
         color: #a0a0ff;
       }
 
       .preset-btn {
         width: 100%;
-        padding: 10px;
-        margin-bottom: 8px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
         background: rgba(99, 102, 241, 0.2);
         border: 1px solid rgba(99, 102, 241, 0.4);
-        border-radius: 8px;
+        border-radius: 6px;
         color: white;
         cursor: pointer;
         font-family: "Poppins", sans-serif;
-        font-size: 0.85em;
-        transition: all 0.3s ease;
+        font-size: 0.8em;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      .preset-btn::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 3px;
+        background: linear-gradient(135deg, #6366f1, #ec4899);
+        transform: scaleY(0);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .preset-btn:hover {
         background: rgba(99, 102, 241, 0.4);
         border-color: rgba(99, 102, 241, 0.6);
         transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      }
+
+      .preset-btn:hover::before {
+        transform: scaleY(1);
+      }
+
+      .preset-btn:active {
+        transform: translateX(3px) scale(0.98);
       }
 
       #back-btn {
@@ -293,14 +408,20 @@
         font-family: "Poppins", sans-serif;
         font-size: 0.9em;
         font-weight: 600;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         text-decoration: none;
         display: inline-block;
+        animation: slideInBottom 1s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       #back-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+        background: linear-gradient(135deg, #7c7ff1, #9d6cf6);
+      }
+
+      #back-btn:active {
+        transform: translateY(0) scale(0.98);
       }
 
       #instructions {
@@ -404,9 +525,9 @@
         <p>Welcome to the electromagnetic field simulator!</p>
         <ul>
           <li>
-            <strong>Select</strong> a charged object type from the control panel
+            <strong>Toggle</strong> placement mode on/off in the control panel
           </li>
-          <li><strong>Click</strong> in the 3D space to place objects</li>
+          <li><strong>Click</strong> in the 3D space to place point charges</li>
           <li><strong>Drag</strong> to rotate the camera, scroll to zoom</li>
           <li><strong>Adjust</strong> charge values with the slider</li>
           <li><strong>Toggle</strong> field lines on/off</li>
@@ -423,12 +544,34 @@
       <h2>Controls</h2>
 
       <div class="control-group">
-        <h3>Add Object</h3>
-        <div class="button-grid">
-          <button class="control-btn" data-type="sphere">⚫ Sphere</button>
-          <button class="control-btn" data-type="rod">📏 Rod</button>
-          <button class="control-btn" data-type="plane">▭ Plane</button>
-          <button class="control-btn" data-type="ring">⭕ Ring</button>
+        <h3>Placement Mode</h3>
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(99, 102, 241, 0.15);
+            border-radius: 8px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+          "
+        >
+          <span style="font-size: 0.9em; color: #c0c0ff">⚫ Point Charges</span>
+          <div
+            class="toggle-switch"
+            id="placement-toggle"
+            data-toggle="placement-mode"
+          ></div>
+        </div>
+        <div
+          style="
+            margin-top: 8px;
+            font-size: 0.8em;
+            color: #888;
+            text-align: center;
+          "
+        >
+          Toggle to enable/disable placement
         </div>
       </div>
 
@@ -475,11 +618,20 @@
       <button class="preset-btn" onclick="loadPreset('quadrupole')">
         Quadrupole
       </button>
-      <button class="preset-btn" onclick="loadPreset('parallel')">
-        Parallel Plates
+      <button class="preset-btn" onclick="loadPreset('triangle')">
+        Triangle
       </button>
-      <button class="preset-btn" onclick="loadPreset('ring')">
-        Charged Ring
+      <button class="preset-btn" onclick="loadPreset('line')">
+        Linear Array
+      </button>
+      <button class="preset-btn" onclick="loadPreset('hexagon')">
+        Hexagon
+      </button>
+      <button class="preset-btn" onclick="loadPreset('surrounded')">
+        Surrounded Charge
+      </button>
+      <button class="preset-btn" onclick="loadPreset('complex')">
+        Complex Field
       </button>
     </div>
 
