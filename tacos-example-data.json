@@ -1,0 +1,83 @@
+{
+  "// NOTE": "This is example data for your Firestore 'tacos' collection",
+  "// INSTRUCTIONS": "Copy these documents into Firestore Console or use them as reference",
+  
+  "taco-1": {
+    "name": "Carne Asada Taco",
+    "description": "Grilled beef with cilantro, onions, and lime",
+    "price": 3.99,
+    "spicy": false,
+    "vegetarian": false,
+    "ingredients": ["beef", "cilantro", "onions", "lime", "corn tortilla"],
+    "rating": 5,
+    "calories": 250
+  },
+  
+  "taco-2": {
+    "name": "Chicken Tinga Taco",
+    "description": "Shredded chicken in smoky chipotle sauce",
+    "price": 3.49,
+    "spicy": true,
+    "vegetarian": false,
+    "ingredients": ["chicken", "chipotle", "tomatoes", "onions", "lettuce"],
+    "rating": 4,
+    "calories": 220
+  },
+  
+  "taco-3": {
+    "name": "Fish Taco",
+    "description": "Crispy battered fish with cabbage slaw",
+    "price": 4.99,
+    "spicy": false,
+    "vegetarian": false,
+    "ingredients": ["fish", "cabbage", "crema", "cilantro", "lime"],
+    "rating": 5,
+    "calories": 280
+  },
+  
+  "taco-4": {
+    "name": "Veggie Taco",
+    "description": "Grilled vegetables with black beans",
+    "price": 2.99,
+    "spicy": false,
+    "vegetarian": true,
+    "ingredients": ["bell peppers", "onions", "black beans", "corn", "avocado"],
+    "rating": 4,
+    "calories": 180
+  },
+  
+  "taco-5": {
+    "name": "Al Pastor Taco",
+    "description": "Marinated pork with pineapple",
+    "price": 3.79,
+    "spicy": true,
+    "vegetarian": false,
+    "ingredients": ["pork", "pineapple", "cilantro", "onions", "chile"],
+    "rating": 5,
+    "calories": 240
+  },
+  
+  "// HOW TO ADD TO FIRESTORE": [
+    "1. Go to Firebase Console > Firestore Database",
+    "2. Click 'Start collection' or open existing 'tacos' collection",
+    "3. For Collection ID, enter: tacos",
+    "4. Click 'Add document'",
+    "5. Set Document ID (e.g., 'taco-1') or leave auto-generated",
+    "6. Add fields one by one (name, description, price, etc.)",
+    "7. Click 'Save'",
+    "8. Repeat for more tacos!"
+  ],
+  
+  "// CUSTOM FIELDS": "You can add ANY fields you want! Examples:",
+  "custom-field-ideas": {
+    "origin": "Mexico City",
+    "popularity": 95,
+    "availableAt": ["Location A", "Location B"],
+    "featured": true,
+    "dateAdded": "Use Firestore Timestamp",
+    "chef": "Chef Name",
+    "allergens": ["gluten", "dairy"],
+    "servingSize": "2 tacos"
+  }
+}
+

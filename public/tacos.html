@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tacos Collection - Joseph</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script defer src="scripts/main.js"></script>
+    <script defer src="scripts/tacos.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      .tacos-container {
+        min-height: 100vh;
+        padding: 120px 20px 60px;
+        background: #050508;
+      }
+
+      .tacos-header {
+        text-align: center;
+        margin-bottom: 60px;
+        color: white;
+      }
+
+      .tacos-header h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        background: linear-gradient(135deg, #6366f1, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .tacos-header p {
+        font-size: 1.2rem;
+        color: #a0aec0;
+      }
+
+      .tacos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 30px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .taco-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        transition: transform 0.3s ease, box-shadow 0.3s ease,
+          border-color 0.3s ease;
+        opacity: 0;
+        animation: fadeInUp 0.6s ease forwards;
+      }
+
+      .taco-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+        border-color: rgba(99, 102, 241, 0.5);
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .taco-card h3 {
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, #6366f1, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 15px;
+        font-weight: 600;
+      }
+
+      .taco-field {
+        margin-bottom: 12px;
+        font-size: 0.95rem;
+      }
+
+      .taco-field strong {
+        color: #8b5cf6;
+        display: inline-block;
+        min-width: 100px;
+      }
+
+      .taco-field span {
+        color: #a0aec0;
+      }
+
+      .loading-container {
+        text-align: center;
+        padding: 100px 20px;
+        color: #a0aec0;
+      }
+
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(99, 102, 241, 0.2);
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-message {
+        text-align: center;
+        padding: 60px 20px;
+        color: #a0aec0;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .error-message h2 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: #ffffff;
+      }
+
+      .error-message p {
+        font-size: 1.1rem;
+        line-height: 1.6;
+      }
+
+      .back-button {
+        display: inline-block;
+        margin: 40px auto 0;
+        padding: 15px 40px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+      }
+
+      .back-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 100px 20px;
+        color: #a0aec0;
+      }
+
+      .empty-state-icon {
+        font-size: 5rem;
+        margin-bottom: 20px;
+      }
+
+      .empty-state h2 {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        color: #ffffff;
+      }
+
+      .empty-state p {
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+      }
+
+      .config-box {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 600px;
+        text-align: left;
+        font-family: monospace;
+        font-size: 0.9rem;
+        line-height: 1.8;
+        color: #a0aec0;
+      }
+
+      .config-box strong {
+        color: #8b5cf6;
+      }
+
+      /* Add Taco Button */
+      .add-taco-btn {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #ec4899);
+        color: white;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+        transition: all 0.3s ease;
+        z-index: 999;
+      }
+
+      .add-taco-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 30px rgba(99, 102, 241, 0.7);
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: #1a1a2e;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-header {
+        margin-bottom: 30px;
+      }
+
+      .modal-header h2 {
+        font-size: 2rem;
+        background: linear-gradient(135deg, #6366f1, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 10px;
+      }
+
+      .modal-header p {
+        color: #a0aec0;
+        font-size: 0.95rem;
+      }
+
+      .close-modal {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: #a0aec0;
+        font-size: 2rem;
+        cursor: pointer;
+        transition: color 0.3s ease;
+      }
+
+      .close-modal:hover {
+        color: #ffffff;
+      }
+
+      .form-group {
+        margin-bottom: 25px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #ffffff;
+        font-weight: 500;
+      }
+
+      .form-group label .required {
+        color: #ec4899;
+      }
+
+      .form-input,
+      .form-textarea,
+      .form-select {
+        width: 100%;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: #ffffff;
+        font-family: "Poppins", sans-serif;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+      }
+
+      .form-input:focus,
+      .form-textarea:focus,
+      .form-select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .form-input::placeholder,
+      .form-textarea::placeholder {
+        color: #6b7280;
+      }
+
+      .form-hint {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 5px;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+      }
+
+      .btn {
+        padding: 12px 30px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        flex: 1;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+      }
+
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        color: #a0aec0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+      }
+
+      /* Tag input styling */
+      .tag-input-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        min-height: 45px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        border-radius: 20px;
+        font-size: 0.85rem;
+      }
+
+      .tag-remove {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+        padding: 0;
+        margin-left: 3px;
+      }
+
+      .tag-input {
+        flex: 1;
+        min-width: 120px;
+        background: none;
+        border: none;
+        color: #ffffff;
+        font-family: "Poppins", sans-serif;
+        font-size: 0.95rem;
+        outline: none;
+      }
+
+      .tag-input::placeholder {
+        color: #6b7280;
+      }
+
+      @media (max-width: 768px) {
+        .modal-content {
+          padding: 25px;
+        }
+
+        .add-taco-btn {
+          bottom: 20px;
+          right: 20px;
+          width: 50px;
+          height: 50px;
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Menu -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <div class="nav-logo">
+          <a href="index.html">Joseph</a>
+        </div>
+        <ul class="nav-menu" id="nav-menu">
+          <li class="nav-item">
+            <a href="index.html#home" class="nav-link">Home</a>
+          </li>
+          <li class="nav-item">
+            <a href="index.html#about" class="nav-link">About</a>
+          </li>
+          <li class="nav-item">
+            <a href="index.html#skills" class="nav-link">Skills</a>
+          </li>
+          <li class="nav-item">
+            <a href="index.html#projects" class="nav-link">Projects</a>
+          </li>
+          <li class="nav-item">
+            <a href="tacos.html" class="nav-link active">Tacos</a>
+          </li>
+          <li class="nav-item">
+            <a href="index.html#contact" class="nav-link">Contact</a>
+          </li>
+        </ul>
+        <div class="nav-toggle" id="nav-toggle">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="tacos-container">
+      <div class="tacos-header">
+        <h1>🌮 Tacos Collection</h1>
+        <p>Database Contents</p>
+      </div>
+
+      <div id="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading tacos from database...</p>
+      </div>
+
+      <div id="error" class="error-message" style="display: none"></div>
+
+      <div id="empty-state" class="empty-state" style="display: none">
+        <div class="empty-state-icon">🌮</div>
+        <h2>No Tacos Yet!</h2>
+        <p>
+          Your collection is empty. Add some tacos to your Firestore database.
+        </p>
+        <div class="config-box">
+          Collection: <strong>tacos</strong><br />
+          Database: <strong>Firestore</strong><br />
+          Status: <strong>Connected</strong>
+        </div>
+        <a href="index.html" class="back-button">← Back to Home</a>
+      </div>
+
+      <div id="tacos-grid" class="tacos-grid"></div>
+    </div>
+
+    <!-- Add Taco Button -->
+    <button class="add-taco-btn" id="addTacoBtn" title="Add New Taco">+</button>
+
+    <!-- Add Taco Modal -->
+    <div class="modal" id="addTacoModal">
+      <div class="modal-content">
+        <button class="close-modal" id="closeModal">&times;</button>
+        <div class="modal-header">
+          <h2>🌮 Add New Taco</h2>
+          <p>Share your favorite taco with the world</p>
+        </div>
+        <form id="addTacoForm" autocomplete="off">
+          <div class="form-group">
+            <label for="tacoName">Name <span class="required">*</span></label>
+            <input
+              type="text"
+              id="tacoName"
+              class="form-input"
+              placeholder="e.g., Carne Asada Taco"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="tacoDescription"
+              >Description <span class="required">*</span></label
+            >
+            <textarea
+              id="tacoDescription"
+              class="form-textarea"
+              placeholder="What makes this taco special?"
+              required
+              autocomplete="off"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="tacoFillings"
+              >Fillings <span class="required">*</span></label
+            >
+            <div class="tag-input-container" id="fillingsContainer">
+              <input
+                type="text"
+                id="fillingsInput"
+                class="tag-input"
+                placeholder="Type and press Enter (e.g., grilled beef, beans)"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-hint">Press Enter after each filling</div>
+          </div>
+
+          <div class="form-group">
+            <label for="tacoGarnishes">Garnishes</label>
+            <div class="tag-input-container" id="garnishesContainer">
+              <input
+                type="text"
+                id="garnishesInput"
+                class="tag-input"
+                placeholder="Type and press Enter (e.g., cilantro, onions)"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-hint">Press Enter after each garnish</div>
+          </div>
+
+          <div class="form-group">
+            <label for="tacoTortilla"
+              >Tortilla <span class="required">*</span></label
+            >
+            <select id="tacoTortilla" class="form-select" required>
+              <option value="">Select tortilla type...</option>
+              <option value="Corn">Corn</option>
+              <option value="Flour">Flour</option>
+              <option value="Whole Wheat">Whole Wheat</option>
+              <option value="Blue Corn">Blue Corn</option>
+              <option value="Spinach">Spinach</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="tacoCuisine"
+              >Cuisine / Region <span class="required">*</span></label
+            >
+            <input
+              type="text"
+              id="tacoCuisine"
+              class="form-input"
+              placeholder="e.g., Mexican, Tex-Mex, Korean Fusion"
+              required
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="cancelBtn">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+              Add Taco
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p class="footer-text">Built with ❤️ by Joseph | © 2025</p>
+      </div>
+    </footer>
+  </body>
+</html>
