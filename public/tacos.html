@@ -20,18 +20,19 @@
       body {
         margin: 0;
         padding: 0;
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
 
       .tacos-container {
         min-height: 100vh;
         padding: 120px 20px 60px;
-        background: #050508;
+        background: var(--bg-darker, #050508);
       }
 
       .tacos-header {
         text-align: center;
         margin-bottom: 60px;
-        color: white;
+        color: var(--text-primary, white);
       }
 
       .tacos-header h1 {
@@ -46,7 +47,7 @@
 
       .tacos-header p {
         font-size: 1.2rem;
-        color: #a0aec0;
+        color: var(--text-secondary, #a0aec0);
       }
 
       .tacos-grid {
@@ -59,9 +60,9 @@
       }
 
       .taco-card {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--glass-bg, rgba(255, 255, 255, 0.05));
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
         border-radius: 20px;
         padding: 30px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -110,13 +111,13 @@
       }
 
       .taco-field span {
-        color: #a0aec0;
+        color: var(--text-secondary, #a0aec0);
       }
 
       .loading-container {
         text-align: center;
         padding: 100px 20px;
-        color: #a0aec0;
+        color: var(--text-secondary, #a0aec0);
       }
 
       .loading-spinner {
@@ -138,7 +139,7 @@
       .error-message {
         text-align: center;
         padding: 60px 20px;
-        color: #a0aec0;
+        color: var(--text-secondary, #a0aec0);
         max-width: 600px;
         margin: 0 auto;
       }
@@ -146,7 +147,7 @@
       .error-message h2 {
         font-size: 2rem;
         margin-bottom: 20px;
-        color: #ffffff;
+        color: var(--text-primary, #ffffff);
       }
 
       .error-message p {
@@ -175,7 +176,7 @@
       .empty-state {
         text-align: center;
         padding: 100px 20px;
-        color: #a0aec0;
+        color: var(--text-secondary, #a0aec0);
       }
 
       .empty-state-icon {
@@ -186,7 +187,7 @@
       .empty-state h2 {
         font-size: 2rem;
         margin-bottom: 15px;
-        color: #ffffff;
+        color: var(--text-primary, #ffffff);
       }
 
       .empty-state p {
@@ -195,8 +196,8 @@
       }
 
       .config-box {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
         border-radius: 10px;
         padding: 20px;
         margin: 20px auto;
@@ -205,7 +206,7 @@
         font-family: monospace;
         font-size: 0.9rem;
         line-height: 1.8;
-        color: #a0aec0;
+        color: var(--text-secondary, #a0aec0);
       }
 
       .config-box strong {
@@ -256,8 +257,8 @@
       }
 
       .modal-content {
-        background: #1a1a2e;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--bg-light, #1a1a2e);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
         border-radius: 20px;
         padding: 40px;
         max-width: 600px;
@@ -292,14 +293,14 @@
         right: 20px;
         background: none;
         border: none;
-        color: #a0aec0;
+        color: var(--text-secondary, #a0aec0);
         font-size: 2rem;
         cursor: pointer;
         transition: color 0.3s ease;
       }
 
       .close-modal:hover {
-        color: #ffffff;
+        color: var(--text-primary, #ffffff);
       }
 
       .form-group {
@@ -309,7 +310,7 @@
       .form-group label {
         display: block;
         margin-bottom: 8px;
-        color: #ffffff;
+        color: var(--text-primary, #ffffff);
         font-weight: 500;
       }
 
@@ -322,10 +323,10 @@
       .form-select {
         width: 100%;
         padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
         border-radius: 10px;
-        color: #ffffff;
+        color: var(--text-primary, #ffffff);
         font-family: "Poppins", sans-serif;
         font-size: 0.95rem;
         transition: all 0.3s ease;
@@ -389,14 +390,14 @@
       }
 
       .btn-secondary {
-        background: rgba(255, 255, 255, 0.05);
-        color: #a0aec0;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+        color: var(--text-secondary, #a0aec0);
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
       }
 
       .btn-secondary:hover {
         background: rgba(255, 255, 255, 0.1);
-        color: #ffffff;
+        color: var(--text-primary, #ffffff);
       }
 
       /* Tag input styling */
@@ -405,8 +406,8 @@
         flex-wrap: wrap;
         gap: 8px;
         padding: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
         border-radius: 10px;
         min-height: 45px;
       }
@@ -438,7 +439,7 @@
         min-width: 120px;
         background: none;
         border: none;
-        color: #ffffff;
+        color: var(--text-primary, #ffffff);
         font-family: "Poppins", sans-serif;
         font-size: 0.95rem;
         outline: none;
@@ -446,6 +447,15 @@
 
       .tag-input::placeholder {
         color: #6b7280;
+      }
+
+      /* Light mode adjustments for tacos page */
+      [data-theme="light"] .taco-card:hover {
+        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+      }
+
+      [data-theme="light"] .modal {
+        background: rgba(0, 0, 0, 0.5);
       }
 
       @media (max-width: 768px) {
@@ -490,10 +500,20 @@
             <a href="index.html#contact" class="nav-link">Contact</a>
           </li>
         </ul>
-        <div class="nav-toggle" id="nav-toggle">
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
+        <div class="nav-actions">
+          <button
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle theme"
+          >
+            <span class="theme-icon sun">☀️</span>
+            <span class="theme-icon moon">🌙</span>
+          </button>
+          <div class="nav-toggle" id="nav-toggle">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+          </div>
         </div>
       </div>
     </nav>

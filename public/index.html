@@ -40,10 +40,20 @@
             <a href="#contact" class="nav-link">Contact</a>
           </li>
         </ul>
-        <div class="nav-toggle" id="nav-toggle">
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
+        <div class="nav-actions">
+          <button
+            class="theme-toggle"
+            id="theme-toggle"
+            aria-label="Toggle theme"
+          >
+            <span class="theme-icon sun">☀️</span>
+            <span class="theme-icon moon">🌙</span>
+          </button>
+          <div class="nav-toggle" id="nav-toggle">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+          </div>
         </div>
       </div>
     </nav>
@@ -111,14 +121,6 @@
               <div class="stat-item">
                 <div class="stat-number" data-target="2">0</div>
                 <div class="stat-label">Learning</div>
-              </div>
-            </div>
-          </div>
-          <div class="about-image">
-            <div class="image-frame">
-              <div class="frame-glow"></div>
-              <div class="about-placeholder">
-                <span>Your Photo</span>
               </div>
             </div>
           </div>
@@ -219,13 +221,6 @@
               reach out!
             </p>
             <div class="contact-methods">
-              <a href="mailto:joseph.p.baca8@gmail.com" class="contact-method">
-                <div class="method-icon">📧</div>
-                <div class="method-text">
-                  <div class="method-label">Email</div>
-                  <div class="method-value">joseph.p.baca8@gmail.com</div>
-                </div>
-              </a>
               <a
                 href="https://github.com/jbaca1-ship-it"
                 class="contact-method"
@@ -278,11 +273,174 @@
       </div>
     </section>
 
+    <!-- Privacy Tracker Card -->
+    <div class="privacy-card" id="privacy-card">
+      <button class="privacy-close" id="privacy-close">×</button>
+      <div class="privacy-header">
+        <span class="privacy-icon">👀</span>
+        <h3>What We Know About You</h3>
+        <p class="privacy-subtitle">Don't worry, this stays on your device!</p>
+      </div>
+      <div class="privacy-content">
+        <div class="privacy-section">
+          <h4>🎯 Identity & Visits</h4>
+          <div class="privacy-item">
+            <span class="label">User ID:</span>
+            <span class="value" id="user-id">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">Visit Count:</span>
+            <span class="value" id="visit-count">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">Session Time:</span>
+            <span class="value" id="session-duration">0s</span>
+          </div>
+        </div>
+
+        <div class="privacy-section">
+          <h4>💻 Device & Browser</h4>
+          <div class="privacy-item">
+            <span class="label">Browser:</span>
+            <span class="value" id="browser-info">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">Platform:</span>
+            <span class="value" id="platform-info">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">Screen:</span>
+            <span class="value" id="screen-info">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">CPU Cores:</span>
+            <span class="value" id="cpu-info">Loading...</span>
+          </div>
+        </div>
+
+        <div class="privacy-section">
+          <h4>🌍 Location & Time</h4>
+          <div class="privacy-item">
+            <span class="label">Timezone:</span>
+            <span class="value" id="timezone-info">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">Language:</span>
+            <span class="value" id="language-info">Loading...</span>
+          </div>
+        </div>
+
+        <div class="privacy-section">
+          <h4>🔋 Hardware</h4>
+          <div class="privacy-item">
+            <span class="label">Battery:</span>
+            <span class="value" id="battery-status">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">Touch Points:</span>
+            <span class="value" id="touch-info">Loading...</span>
+          </div>
+        </div>
+
+        <div class="privacy-section">
+          <h4>🎨 Fingerprinting</h4>
+          <div class="privacy-item">
+            <span class="label">Canvas ID:</span>
+            <span class="value fingerprint" id="canvas-fp">Loading...</span>
+          </div>
+          <div class="privacy-item">
+            <span class="label">WebGL Vendor:</span>
+            <span class="value" id="webgl-vendor">Loading...</span>
+          </div>
+        </div>
+
+        <div class="privacy-fun-fact">
+          <strong>Random Fact:</strong>
+          <p id="random-fact">Loading...</p>
+        </div>
+
+        <div class="privacy-footer">
+          <small>
+            ℹ️ This demonstrates what websites typically track (like Google
+            Analytics). No data is sent anywhere - it stays on your device!
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy Toggle Button -->
+    <button
+      class="privacy-toggle"
+      id="privacy-toggle"
+      title="See what we're tracking"
+    >
+      👁️ <span>Privacy Info</span>
+    </button>
+
     <!-- Footer -->
     <footer class="footer">
       <div class="container">
         <p class="footer-text">Built with ❤️ by Joseph | © 2025</p>
       </div>
     </footer>
+
+    <script>
+      // Privacy card toggle functionality
+      document.addEventListener("DOMContentLoaded", () => {
+        const privacyCard = document.getElementById("privacy-card");
+        const privacyToggle = document.getElementById("privacy-toggle");
+        const privacyClose = document.getElementById("privacy-close");
+
+        function updatePrivacyCard() {
+          if (window.privacyTracker && window.privacyTracker.data) {
+            const data = window.privacyTracker.data;
+
+            document.getElementById("user-id").textContent = data.userId;
+            document.getElementById("visit-count").textContent =
+              data.visitCount;
+            document.getElementById("browser-info").textContent = data.browser;
+            document.getElementById("platform-info").textContent =
+              data.platform;
+            document.getElementById("screen-info").textContent =
+              data.screenResolution;
+            document.getElementById("cpu-info").textContent =
+              data.hardwareConcurrency;
+            document.getElementById("timezone-info").textContent =
+              data.timezone;
+            document.getElementById("language-info").textContent =
+              data.language;
+            document.getElementById("battery-status").textContent =
+              data.battery;
+            document.getElementById("touch-info").textContent =
+              data.maxTouchPoints || "Not a touch device";
+            document.getElementById("canvas-fp").textContent =
+              data.canvasFingerprint;
+            document.getElementById("webgl-vendor").textContent =
+              data.webglVendor;
+            document.getElementById("random-fact").textContent =
+              window.privacyTracker.getRandomFact();
+          }
+        }
+
+        privacyToggle.addEventListener("click", () => {
+          privacyCard.classList.add("active");
+          updatePrivacyCard();
+        });
+
+        privacyClose.addEventListener("click", () => {
+          privacyCard.classList.remove("active");
+        });
+
+        // Click outside to close
+        privacyCard.addEventListener("click", (e) => {
+          if (e.target === privacyCard) {
+            privacyCard.classList.remove("active");
+          }
+        });
+
+        // Update every few seconds
+        setInterval(updatePrivacyCard, 2000);
+      });
+    </script>
   </body>
 </html>

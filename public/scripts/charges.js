@@ -19,6 +19,10 @@ let raycaster, mouse;
 // Visualization toggles
 let showFieldLines = true;
 
+// Theme-related variables
+let bgSphere, gridHelper, axesHelper;
+let currentTheme = 'dark';
+
 // ==================== 
 // CHARGED OBJECT CLASS
 // ====================
@@ -603,7 +607,7 @@ function initThreeJS() {
         transparent: true,
         opacity: 0.3
     });
-    const bgSphere = new THREE.Mesh(bgGeometry, bgMaterial);
+    bgSphere = new THREE.Mesh(bgGeometry, bgMaterial);
     scene.add(bgSphere);
     
     // Camera
@@ -665,13 +669,13 @@ function initThreeJS() {
     scene.add(dirLight);
     
     // Grid Helper with better styling
-    const gridHelper = new THREE.GridHelper(20, 20, 0x4444aa, 0x222255);
+    gridHelper = new THREE.GridHelper(20, 20, 0x4444aa, 0x222255);
     gridHelper.material.transparent = true;
     gridHelper.material.opacity = 0.3;
     scene.add(gridHelper);
     
     // Subtle axes helper
-    const axesHelper = new THREE.AxesHelper(3);
+    axesHelper = new THREE.AxesHelper(3);
     axesHelper.material.transparent = true;
     axesHelper.material.opacity = 0.5;
     scene.add(axesHelper);
@@ -683,6 +687,9 @@ function initThreeJS() {
     // Event listeners
     window.addEventListener('resize', onWindowResize);
     renderer.domElement.addEventListener('click', onCanvasClick);
+    
+    // Check initial theme
+    updateSceneTheme();
 }
 
 function onWindowResize() {
@@ -856,6 +863,69 @@ function animate() {
     });
     
     renderer.render(scene, camera);
+}
+
+// ==================== 
+// THEME SUPPORT
+// ====================
+function updateSceneTheme() {
+    const theme = document.documentElement.getAttribute('data-theme');
+    currentTheme = theme === 'light' ? 'light' : 'dark';
+    
+    if (currentTheme === 'light') {
+        // Light mode colors
+        scene.background = new THREE.Color(0xe0e7ff);
+        scene.fog.color = new THREE.Color(0xe0e7ff);
+        
+        if (bgSphere) {
+            bgSphere.material.color.setHex(0xf3e8ff);
+            bgSphere.material.opacity = 0.5;
+        }
+        
+        if (gridHelper) {
+            // Update grid colors for light mode
+            gridHelper.material.color.setHex(0x9ca3af);
+            gridHelper.material.opacity = 0.4;
+        }
+        
+        if (axesHelper) {
+            axesHelper.material.opacity = 0.7;
+        }
+    } else {
+        // Dark mode colors
+        scene.background = new THREE.Color(0x0a0a1a);
+        scene.fog.color = new THREE.Color(0x0a0a1a);
+        
+        if (bgSphere) {
+            bgSphere.material.color.setHex(0x1a1a3e);
+            bgSphere.material.opacity = 0.3;
+        }
+        
+        if (gridHelper) {
+            gridHelper.material.color.setHex(0x4444aa);
+            gridHelper.material.opacity = 0.3;
+        }
+        
+        if (axesHelper) {
+            axesHelper.material.opacity = 0.5;
+        }
+    }
+}
+
+// Listen for theme changes
+if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+                updateSceneTheme();
+            }
+        });
+    });
+    
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+    });
 }
 
 // ==================== 
