@@ -97,11 +97,11 @@ class Unit {
     if (distance > 2) {
       const moveX = (dx / distance) * this.speed;
       const moveY = (dy / distance) * this.speed;
-      
+
       // Apply movement
       this.x += moveX;
       this.y += moveY;
-      
+
       // Handle collision with other units
       this.handleCollisions(allUnits);
     }
@@ -114,25 +114,25 @@ class Unit {
 
   handleCollisions(allUnits) {
     const collisionRadius = this.size + 2; // Units can't get closer than this
-    
+
     for (const other of allUnits) {
       if (other === this || other.isDead) continue;
-      
+
       const dx = this.x - other.x;
       const dy = this.y - other.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
       const minDistance = collisionRadius + other.size + 2;
-      
+
       // If units are overlapping, push them apart
       if (distance < minDistance && distance > 0) {
         const overlap = minDistance - distance;
         const pushX = (dx / distance) * overlap * 0.5;
         const pushY = (dy / distance) * overlap * 0.5;
-        
+
         // Push this unit away
         this.x += pushX;
         this.y += pushY;
-        
+
         // Push other unit away (only if same team to avoid weird behavior)
         if (this.team === other.team) {
           other.x -= pushX;
@@ -140,7 +140,7 @@ class Unit {
         }
       }
     }
-    
+
     // Keep units within canvas bounds
     const padding = this.size;
     this.x = Math.max(padding, Math.min(1200 - padding, this.x));
@@ -170,23 +170,42 @@ class Unit {
   }
 
   canAttack(target) {
+    // Check if unit is currently moving
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
+    const distanceToTarget = Math.sqrt(dx * dx + dy * dy);
+    const isMoving = distanceToTarget > 2; // Same threshold as in update()
+
+    // Check if target is in range
+    const targetInRange = this.distanceTo(target) <= this.range;
+    
+    // Melee range - short distance where units can attack while moving
+    const meleeRange = 40; // Fixed melee range in pixels
+    const isInMeleeRange = this.distanceTo(target) <= meleeRange;
+    
+    // Can attack if:
+    // 1. Unit is not moving (normal case)
+    // 2. OR unit is moving but enemy is in melee range (very close)
+    const canAttackWhileMoving = isInMeleeRange;
+
     return (
       !this.isDead &&
       !target.isDead &&
-      this.distanceTo(target) <= this.range &&
-      this.attackCooldown === 0
+      targetInRange &&
+      this.attackCooldown === 0 &&
+      (!isMoving || canAttackWhileMoving) // Can attack if not moving, or if enemy is in melee range
     );
   }
 
   attack(target) {
     if (this.canAttack(target)) {
       let damageAmount = this.damage;
-      
+
       // Bonus damage if this is our focus target
       if (this.focusTarget === target) {
         damageAmount *= 1.5; // 50% bonus damage for focused attacks
       }
-      
+
       target.takeDamage(damageAmount);
       this.attackCooldown = this.attackSpeed;
       return true;
@@ -205,11 +224,15 @@ class Unit {
   draw(ctx) {
     if (this.isDead) return;
 
-    // Draw movement line (before unit so it's behind)
-    if (this.showMovementLine && this.movementLineTimer > 0) {
+    // Draw movement line (before unit so it's behind) - only for player units
+    if (
+      this.showMovementLine &&
+      this.movementLineTimer > 0 &&
+      this.team === "player"
+    ) {
       ctx.save();
       const alpha = Math.min(1, this.movementLineTimer / 60);
-      
+
       if (this.focusTarget && !this.focusTarget.isDead) {
         // Targeting line - red for attack
         ctx.strokeStyle = `rgba(255, 50, 50, ${alpha * 0.8})`;
@@ -219,20 +242,22 @@ class Unit {
         ctx.strokeStyle = `rgba(100, 255, 100, ${alpha * 0.6})`;
         ctx.lineWidth = 2;
       }
-      
+
       ctx.setLineDash([10, 5]);
       ctx.beginPath();
       ctx.moveTo(this.x, this.y);
       ctx.lineTo(this.targetX, this.targetY);
       ctx.stroke();
       ctx.setLineDash([]);
-      
+
       // Draw destination marker
-      ctx.fillStyle = this.focusTarget ? `rgba(255, 50, 50, ${alpha})` : `rgba(100, 255, 100, ${alpha})`;
+      ctx.fillStyle = this.focusTarget
+        ? `rgba(255, 50, 50, ${alpha})`
+        : `rgba(100, 255, 100, ${alpha})`;
       ctx.beginPath();
       ctx.arc(this.targetX, this.targetY, 5, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.restore();
     }
 
@@ -699,6 +724,7 @@ class Battle {
     this.battleTime = 0;
     this.isPaused = false;
     this.pausedTime = 0; // Track time spent paused
+    this.scoreSubmitted = false; // Track if score has been submitted
 
     // Initialize subsystems
     this.armySelector = new ArmySelector(this);
@@ -739,14 +765,16 @@ class Battle {
 
   setupEventListeners() {
     this.canvas.addEventListener("click", (e) => this.handleCanvasClick(e));
-    this.canvas.addEventListener("contextmenu", (e) => this.handleRightClick(e));
+    this.canvas.addEventListener("contextmenu", (e) =>
+      this.handleRightClick(e)
+    );
     this.canvas.addEventListener("mousemove", (e) => this.handleMouseMove(e));
     this.canvas.addEventListener("mousedown", (e) => this.handleMouseDown(e));
     this.canvas.addEventListener("mouseup", (e) => this.handleMouseUp(e));
-    
+
     // Keyboard shortcuts
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
-    
+
     // Track mouse position and drag selection
     this.mouseX = 0;
     this.mouseY = 0;
@@ -755,22 +783,26 @@ class Battle {
     this.dragStartY = 0;
     this.dragEndX = 0;
     this.dragEndY = 0;
+    this.draggedUnit = null; // Unit being dragged during deployment
+    this.mouseDownX = 0;
+    this.mouseDownY = 0;
+    this.justFinishedDrag = false; // Track if we just finished a drag selection
   }
 
   handleRightClick(e) {
     e.preventDefault(); // Prevent context menu
-    
+
     if (this.phase !== "combat") return;
-    
+
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     // Get all selected units
-    const selectedUnits = this.units.filter(u => u.team === "player" && u.selected && !u.isDead);
-    
-    if (selectedUnits.length === 0) return;
-    
+    const selectedUnits = this.units.filter(
+      (u) => u.team === "player" && u.selected && !u.isDead
+    );
+
     // Check if right-clicking on an enemy unit
     let targetEnemy = null;
     for (const unit of this.units) {
@@ -779,17 +811,26 @@ class Battle {
         break;
       }
     }
-    
-    if (targetEnemy) {
+
+    if (targetEnemy && selectedUnits.length > 0) {
       // Command selected units to attack this specific target
       for (const unit of selectedUnits) {
         unit.setFocusTarget(targetEnemy);
       }
-    } else {
-      // Right-click on ground - same as left-click, just move
+    } else if (selectedUnits.length > 0) {
+      // Right-click on ground with selected units - move them
       for (const unit of selectedUnits) {
         unit.moveTo(x, y);
       }
+    } else {
+      // Right-click on empty ground with no selected units - deselect all
+      for (const unit of this.units) {
+        if (unit.team === "player") {
+          unit.selected = false;
+        }
+      }
+      this.selectedUnit = null;
+      this.updateUnitInfo();
     }
   }
 
@@ -797,17 +838,31 @@ class Battle {
     // Spacebar or P to pause/unpause (only during combat)
     if ((e.code === "Space" || e.code === "KeyP") && this.phase === "combat") {
       e.preventDefault();
+      e.stopPropagation();
       this.togglePause();
+      return;
     }
-    // ESC to pause
-    if (e.code === "Escape" && this.phase === "combat") {
-      if (!this.isPaused) {
-        this.togglePause();
+    // ESC to deselect all units (or prevent default behavior)
+    if (e.code === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      if (this.phase === "combat") {
+        // Deselect all units
+        for (const unit of this.units) {
+          if (unit.team === "player") {
+            unit.selected = false;
+          }
+        }
+        this.selectedUnit = null;
+        this.updateUnitInfo();
       }
+      return;
     }
     // Ctrl+A to select all units
     if (e.code === "KeyA" && e.ctrlKey && this.phase === "combat") {
       e.preventDefault();
+      e.stopPropagation();
       this.selectAllUnits();
     }
   }
@@ -819,7 +874,7 @@ class Battle {
         unit.selected = false;
       }
     }
-    
+
     // Select all player units
     let selectedCount = 0;
     for (const unit of this.units) {
@@ -828,7 +883,7 @@ class Battle {
         selectedCount++;
       }
     }
-    
+
     if (selectedCount > 0) {
       this.updateUnitInfo();
     }
@@ -839,6 +894,20 @@ class Battle {
     this.mouseX = e.clientX - rect.left;
     this.mouseY = e.clientY - rect.top;
 
+    // Handle unit dragging during deployment
+    if (this.phase === "deployment" && this.draggedUnit) {
+      // Constrain to left side of battlefield
+      const x = Math.min(this.mouseX, this.canvas.width / 2);
+      const y = Math.max(0, Math.min(this.mouseY, this.canvas.height));
+
+      // Temporarily move the unit (will validate on mouse up)
+      this.draggedUnit.x = x;
+      this.draggedUnit.y = y;
+      this.draggedUnit.targetX = x;
+      this.draggedUnit.targetY = y;
+      return;
+    }
+
     // Update drag selection box
     if (this.isDragging) {
       this.dragEndX = this.mouseX;
@@ -847,23 +916,42 @@ class Battle {
   }
 
   handleMouseDown(e) {
-    if (this.phase !== "combat") return;
+    // Only handle left mouse button (button 0)
+    // Right-clicks are handled separately in handleRightClick
+    if (e.button !== 0) return;
     
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    
+    // Reset the flag at the start of each mouse interaction
+    this.justFinishedDrag = false;
+    
+    // Store mouse down position to detect if it's a drag or click
+    this.mouseDownX = x;
+    this.mouseDownY = y;
 
-    // Check if clicking on a unit - if so, don't start drag selection
-    let clickedUnit = null;
-    for (const unit of this.units) {
-      if (unit.team === "player" && !unit.isDead && unit.containsPoint(x, y)) {
-        clickedUnit = unit;
-        break;
+    // Handle deployment phase - allow dragging placed units
+    if (this.phase === "deployment") {
+      // Check if clicking on a placed player unit
+      for (const unit of this.units) {
+        if (
+          unit.team === "player" &&
+          !unit.isDead &&
+          unit.containsPoint(x, y)
+        ) {
+          this.draggedUnit = unit;
+          // Store original position for snap-back if needed
+          this.draggedUnitOriginalX = unit.x;
+          this.draggedUnitOriginalY = unit.y;
+          return;
+        }
       }
+      return; // If not clicking on a unit, let handleDeploymentClick handle it
     }
 
-    // Only start drag selection if not clicking on a unit
-    if (!clickedUnit) {
+    // Combat phase - always allow drag selection to start
+    if (this.phase === "combat") {
       this.isDragging = true;
       this.dragStartX = x;
       this.dragStartY = y;
@@ -873,69 +961,170 @@ class Battle {
   }
 
   handleMouseUp(e) {
-    if (this.phase !== "combat" || !this.isDragging) return;
-
+    // Only handle left mouse button (button 0)
+    // Right-clicks are handled separately in handleRightClick
+    if (e.button !== 0) return;
+    
     const rect = this.canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    this.dragEndX = x;
-    this.dragEndY = y;
-
-    // Calculate selection box bounds
-    const minX = Math.min(this.dragStartX, this.dragEndX);
-    const maxX = Math.max(this.dragStartX, this.dragEndX);
-    const minY = Math.min(this.dragStartY, this.dragEndY);
-    const maxY = Math.max(this.dragStartY, this.dragEndY);
-
-    // Only select if we actually dragged (not just a click)
+    const mouseUpX = e.clientX - rect.left;
+    const mouseUpY = e.clientY - rect.top;
+    
+    // Calculate if this was a click (little movement) or a drag
     const dragDistance = Math.sqrt(
-      Math.pow(this.dragEndX - this.dragStartX, 2) + 
-      Math.pow(this.dragEndY - this.dragStartY, 2)
+      Math.pow(mouseUpX - this.mouseDownX, 2) + 
+      Math.pow(mouseUpY - this.mouseDownY, 2)
     );
-
-    if (dragDistance > 5) { // Minimum drag distance
-      // Deselect all units first
-      for (const unit of this.units) {
-        if (unit.team === "player") {
-          unit.selected = false;
-        }
+    const wasClick = dragDistance < 5; // Less than 5 pixels = click
+    
+    // Handle deployment phase - finalize unit drag
+    if (this.phase === "deployment" && this.draggedUnit) {
+      // If it was just a click (not a drag), clear draggedUnit and let handleCanvasClick handle it
+      if (wasClick) {
+        this.draggedUnit = null;
+        return;
       }
-
-      // Select all player units within the box
-      let selectedCount = 0;
-      for (const unit of this.units) {
-        if (unit.team === "player" && !unit.isDead) {
-          if (unit.x >= minX && unit.x <= maxX && 
-              unit.y >= minY && unit.y <= maxY) {
-            unit.selected = true;
-            selectedCount++;
+      
+      const x = Math.min(mouseUpX, this.canvas.width / 2);
+      const y = Math.max(0, Math.min(mouseUpY, this.canvas.height));
+      
+      // Use stored original position
+      const originalX = this.draggedUnitOriginalX;
+      const originalY = this.draggedUnitOriginalY;
+      
+      // Check if new position is valid (excluding the unit being dragged)
+      const tempUnits = this.units.filter((u) => u !== this.draggedUnit);
+      let isValid = true;
+      const minPlacementDistance = 35;
+      
+      for (const existingUnit of tempUnits) {
+        if (existingUnit.team === "player") {
+          const dx = x - existingUnit.x;
+          const dy = y - existingUnit.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < minPlacementDistance) {
+            isValid = false;
+            break;
           }
         }
       }
-
-      // Update unit info to show first selected unit or count
-      if (selectedCount > 0) {
-        this.updateUnitInfo();
+      
+      // Also check if position is on left side
+      if (x > this.canvas.width / 2) {
+        isValid = false;
       }
+      
+      if (isValid) {
+        // Valid position - keep the new position
+        this.draggedUnit.x = x;
+        this.draggedUnit.y = y;
+        this.draggedUnit.targetX = x;
+        this.draggedUnit.targetY = y;
+      } else {
+        // Invalid position - snap back to original
+        this.draggedUnit.x = originalX;
+        this.draggedUnit.y = originalY;
+        this.draggedUnit.targetX = originalX;
+        this.draggedUnit.targetY = originalY;
+        this.showMessage("Cannot place here!");
+      }
+      
+      this.draggedUnit = null;
+      return;
     }
 
-    this.isDragging = false;
+    // Combat phase - handle clicks and drags
+    if (this.phase === "combat" && this.isDragging) {
+      const x = mouseUpX;
+      const y = mouseUpY;
+
+      this.dragEndX = x;
+      this.dragEndY = y;
+
+      // Calculate selection box bounds
+      const minX = Math.min(this.dragStartX, this.dragEndX);
+      const maxX = Math.max(this.dragStartX, this.dragEndX);
+      const minY = Math.min(this.dragStartY, this.dragEndY);
+      const maxY = Math.max(this.dragStartY, this.dragEndY);
+
+      // Calculate drag distance
+      const combatDragDistance = Math.sqrt(
+        Math.pow(this.dragEndX - this.dragStartX, 2) +
+          Math.pow(this.dragEndY - this.dragStartY, 2)
+      );
+
+      if (combatDragDistance > 5) {
+        // Was a drag selection
+        this.justFinishedDrag = true;
+        
+        // Deselect all units first
+        for (const unit of this.units) {
+          if (unit.team === "player") {
+            unit.selected = false;
+          }
+        }
+
+        // Select all player units within the box
+        let selectedCount = 0;
+        for (const unit of this.units) {
+          if (unit.team === "player" && !unit.isDead) {
+            if (
+              unit.x >= minX &&
+              unit.x <= maxX &&
+              unit.y >= minY &&
+              unit.y <= maxY
+            ) {
+              unit.selected = true;
+              selectedCount++;
+            }
+          }
+        }
+
+        // Update unit info to show first selected unit or count
+        if (selectedCount > 0) {
+          this.updateUnitInfo();
+        }
+      } else {
+        // Was a click - handle it directly here
+        this.justFinishedDrag = false;
+        this.handleCombatClick(mouseUpX, mouseUpY);
+      }
+
+      this.isDragging = false;
+      return;
+    }
   }
 
   handleCanvasClick(e) {
-    // Don't process click if we just finished dragging
-    if (this.isDragging) return;
+    // Don't process click if we just finished dragging a selection box or are dragging a unit
+    if (this.draggedUnit) return;
+    
+    // Combat phase clicks are handled in handleMouseUp, so skip them here
+    if (this.phase === "combat") {
+      return;
+    }
 
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     if (this.phase === "deployment") {
-      this.handleDeploymentClick(x, y);
-    } else if (this.phase === "combat") {
-      // Allow commands even when paused
-      this.handleCombatClick(x, y);
+      // Check if clicking on an existing unit - if so, don't place new unit
+      let clickedUnit = null;
+      for (const unit of this.units) {
+        if (
+          unit.team === "player" &&
+          !unit.isDead &&
+          unit.containsPoint(x, y)
+        ) {
+          clickedUnit = unit;
+          break;
+        }
+      }
+
+      // Only place new unit if not clicking on existing unit
+      if (!clickedUnit) {
+        this.handleDeploymentClick(x, y);
+      }
     }
   }
 
@@ -1020,34 +1209,60 @@ class Battle {
 
   handleCombatClick(x, y) {
     // Check if clicking on a player unit
-    let clickedUnit = null;
+    let clickedPlayerUnit = null;
     for (const unit of this.units) {
       if (unit.team === "player" && !unit.isDead && unit.containsPoint(x, y)) {
-        clickedUnit = unit;
+        clickedPlayerUnit = unit;
         break;
       }
     }
 
-    if (clickedUnit) {
+    if (clickedPlayerUnit) {
       // Select single unit (deselect others)
       for (const unit of this.units) {
         if (unit.team === "player") {
           unit.selected = false;
         }
       }
-      this.selectedUnit = clickedUnit;
+      this.selectedUnit = clickedPlayerUnit;
       this.selectedUnit.selected = true;
       this.updateUnitInfo();
+      return;
+    }
+
+    // Check if clicking on an enemy unit
+    let clickedEnemyUnit = null;
+    for (const unit of this.units) {
+      if (unit.team === "enemy" && !unit.isDead && unit.containsPoint(x, y)) {
+        clickedEnemyUnit = unit;
+        break;
+      }
+    }
+
+    // Get selected units
+    const selectedUnits = this.units.filter(
+      (u) => u.team === "player" && u.selected && !u.isDead
+    );
+
+    if (clickedEnemyUnit && selectedUnits.length > 0) {
+      // Attack the enemy with all selected units
+      for (const unit of selectedUnits) {
+        unit.setFocusTarget(clickedEnemyUnit);
+      }
+    } else if (selectedUnits.length > 0) {
+      // Left-click on empty ground with selected units - move units
+      for (const unit of selectedUnits) {
+        unit.moveTo(x, y);
+      }
     } else {
-      // Check if we have any selected units
-      const selectedUnits = this.units.filter(u => u.team === "player" && u.selected && !u.isDead);
-      
-      if (selectedUnits.length > 0) {
-        // Left-click always moves (attack-move)
-        for (const unit of selectedUnits) {
-          unit.moveTo(x, y);
+      // Left-click on empty ground with no selected units - deselect all
+      for (const unit of this.units) {
+        if (unit.team === "player") {
+          unit.selected = false;
         }
       }
+      this.selectedUnit = null;
+      this.updateUnitInfo();
     }
   }
 
@@ -1171,7 +1386,7 @@ class Battle {
 
   togglePause() {
     this.isPaused = !this.isPaused;
-    
+
     if (this.isPaused) {
       // Pausing
       this.pauseStartTime = Date.now();
@@ -1204,7 +1419,9 @@ class Battle {
     if (this.isPaused) return;
 
     // Update battle time (excluding paused time)
-    this.battleTime = Math.floor((Date.now() - this.battleStartTime - this.pausedTime) / 1000);
+    this.battleTime = Math.floor(
+      (Date.now() - this.battleStartTime - this.pausedTime) / 1000
+    );
 
     // Update all units (pass all units for collision detection)
     for (const unit of this.units) {
@@ -1258,13 +1475,17 @@ class Battle {
           this.createHitEffect(unit.focusTarget.x, unit.focusTarget.y);
           if (unit.focusTarget.isDead && wasAlive) {
             this.enemyKills++;
-            this.createDeathParticles(unit.focusTarget.x, unit.focusTarget.y, unit.focusTarget.color);
+            this.createDeathParticles(
+              unit.focusTarget.x,
+              unit.focusTarget.y,
+              unit.focusTarget.color
+            );
             unit.focusTarget = null;
           }
           continue;
         }
       }
-      
+
       // Otherwise attack any enemy in range
       for (const enemy of enemyUnits) {
         const wasAlive = !enemy.isDead;
@@ -1341,10 +1562,44 @@ class Battle {
       this.battleTime + "s";
     document.getElementById("timeBonusDisplay").textContent = timeBonus;
 
+    // Reset submit button and UI for new battle
+    const buttonsContainer = document.querySelector(".victory-buttons");
+    if (buttonsContainer) {
+      // Remove any success message
+      const successMsg = buttonsContainer.querySelector(
+        ".score-submitted-message"
+      );
+      if (successMsg) {
+        successMsg.remove();
+      }
+
+      // Restore submit button if it was removed
+      const submitBtn = buttonsContainer.querySelector(".victory-btn.primary");
+      if (!submitBtn) {
+        const newSubmitBtn = document.createElement("button");
+        newSubmitBtn.className = "victory-btn primary";
+        newSubmitBtn.onclick = () => battle.submitScore();
+        newSubmitBtn.textContent = "Submit Score";
+        buttonsContainer.insertBefore(
+          newSubmitBtn,
+          buttonsContainer.querySelector(".victory-btn.secondary")
+        );
+      }
+    }
+    this.scoreSubmitted = false; // Reset flag for new battle
+
+    // Load and show leaderboard when battle ends
+    this.loadLeaderboard();
+
     overlay.classList.remove("hidden");
   }
 
   async submitScore() {
+    // Prevent duplicate submissions (safety check)
+    if (this.scoreSubmitted) {
+      return;
+    }
+
     const playerName = document.getElementById("playerNameInput").value.trim();
     if (!playerName) {
       alert("Please enter your name!");
@@ -1357,14 +1612,44 @@ class Battle {
 
     if (this.db) {
       try {
-        await this.db.collection("battle_scores").add({
-          playerName: playerName,
+        // Format date as string (YYYY-MM-DD HH:MM:SS)
+        const now = new Date();
+        const dateString = now.toISOString().slice(0, 19).replace("T", " ");
+
+        await this.db.collection("scores").add({
+          name: playerName,
           score: finalScore,
-          kills: this.enemyKills,
-          losses: this.playerLosses,
-          battleTime: this.battleTime,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          date: dateString,
         });
+
+        // Mark as submitted and remove the button
+        this.scoreSubmitted = true;
+        const submitBtn = document.querySelector(".victory-btn.primary");
+        if (submitBtn) {
+          submitBtn.remove(); // Remove the button entirely
+        }
+
+        // Show success message
+        const buttonsContainer = document.querySelector(".victory-buttons");
+        if (buttonsContainer) {
+          const successMsg = document.createElement("div");
+          successMsg.className = "score-submitted-message";
+          successMsg.innerHTML = "✓ Score Submitted Successfully!";
+          successMsg.style.cssText = `
+            padding: 15px;
+            background: rgba(74, 144, 226, 0.2);
+            border: 2px solid #4a90e2;
+            border-radius: 6px;
+            color: #4affe2;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+          `;
+          buttonsContainer.insertBefore(
+            successMsg,
+            buttonsContainer.firstChild
+          );
+        }
 
         // Load and display leaderboard
         await this.loadLeaderboard(playerName);
@@ -1382,7 +1667,7 @@ class Battle {
 
     try {
       const snapshot = await this.db
-        .collection("battle_scores")
+        .collection("scores")
         .orderBy("score", "desc")
         .limit(10)
         .get();
@@ -1395,14 +1680,22 @@ class Battle {
         const data = doc.data();
         const entry = document.createElement("div");
         entry.className = "leaderboard-entry";
-        if (data.playerName === highlightName) {
+        if (data.name === highlightName) {
           entry.classList.add("highlight");
         }
 
+        // Ensure score is a number (handle both string and number types)
+        const score =
+          typeof data.score === "number"
+            ? data.score
+            : parseInt(data.score, 10) || 0;
+
         entry.innerHTML = `
                     <span class="leaderboard-rank">${index + 1}.</span>
-                    <span class="leaderboard-name">${data.playerName}</span>
-                    <span class="leaderboard-score">${data.score}</span>
+                    <span class="leaderboard-name">${
+                      data.name || "Unknown"
+                    }</span>
+                    <span class="leaderboard-score">${score}</span>
                 `;
 
         entriesDiv.appendChild(entry);
@@ -1469,32 +1762,40 @@ class Battle {
         this.ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         this.ctx.font = "bold 18px Arial";
         this.ctx.fillText(`Placing: ${config.name}`, this.canvas.width / 4, 85);
-        
+
         // Draw placement preview at mouse position
         if (this.mouseX > 0 && this.mouseX < this.canvas.width / 2) {
-          const isValid = this.isValidPlacementPosition(this.mouseX, this.mouseY);
-          
+          const isValid = this.isValidPlacementPosition(
+            this.mouseX,
+            this.mouseY
+          );
+
           // Draw ghost unit
           this.ctx.save();
           this.ctx.globalAlpha = 0.5;
           this.ctx.translate(this.mouseX, this.mouseY);
-          
+
           // Draw preview circle
           this.ctx.strokeStyle = isValid ? "#00ff00" : "#ff0000";
           this.ctx.lineWidth = 3;
           this.ctx.beginPath();
           this.ctx.arc(0, 0, config.size + 5, 0, Math.PI * 2);
           this.ctx.stroke();
-          
+
           // Draw unit shape preview
           this.ctx.fillStyle = config.color;
           this.ctx.strokeStyle = isValid ? "#00ff00" : "#ff0000";
           this.ctx.lineWidth = 2;
           this.ctx.beginPath();
-          
+
           switch (config.shape) {
             case "square":
-              this.ctx.rect(-config.size / 2, -config.size / 2, config.size, config.size);
+              this.ctx.rect(
+                -config.size / 2,
+                -config.size / 2,
+                config.size,
+                config.size
+              );
               break;
             case "triangle":
               this.ctx.moveTo(0, -config.size / 2);
@@ -1514,7 +1815,7 @@ class Battle {
               this.ctx.closePath();
               break;
           }
-          
+
           this.ctx.fill();
           this.ctx.stroke();
           this.ctx.restore();
@@ -1540,16 +1841,20 @@ class Battle {
       this.ctx.save();
       this.ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      
+
       this.ctx.fillStyle = "rgba(74, 144, 226, 0.9)";
       this.ctx.font = "bold 32px Arial";
       this.ctx.textAlign = "center";
       this.ctx.fillText("⏸ PAUSED", this.canvas.width / 2, 40);
-      
+
       this.ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
       this.ctx.font = "16px Arial";
-      this.ctx.fillText("You can still select units and give orders", this.canvas.width / 2, 70);
-      
+      this.ctx.fillText(
+        "You can still select units and give orders",
+        this.canvas.width / 2,
+        70
+      );
+
       this.ctx.restore();
     }
 
@@ -1563,24 +1868,50 @@ class Battle {
       unit.draw(this.ctx);
     }
 
+    // Draw visual indicator for dragged unit during deployment
+    if (this.phase === "deployment" && this.draggedUnit) {
+      this.ctx.save();
+      this.ctx.translate(this.draggedUnit.x, this.draggedUnit.y);
+
+      // Draw pulsing ring around dragged unit
+      const pulse = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+      this.ctx.strokeStyle = `rgba(100, 255, 255, ${pulse})`;
+      this.ctx.lineWidth = 3;
+      this.ctx.setLineDash([5, 5]);
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, this.draggedUnit.size + 10, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+
+      // Draw semi-transparent overlay
+      this.ctx.globalAlpha = 0.5;
+      this.ctx.fillStyle = this.draggedUnit.color;
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, this.draggedUnit.size + 2, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.globalAlpha = 1;
+
+      this.ctx.restore();
+    }
+
     // Draw target indicators on enemy units
     for (const unit of this.units) {
       if (unit.team === "enemy" && !unit.isDead) {
         // Check if any player units are targeting this enemy
-        const targetingUnits = this.units.filter(u => 
-          u.team === "player" && !u.isDead && u.focusTarget === unit
+        const targetingUnits = this.units.filter(
+          (u) => u.team === "player" && !u.isDead && u.focusTarget === unit
         );
-        
+
         if (targetingUnits.length > 0) {
           // Draw targeting reticle on enemy
           this.ctx.save();
           this.ctx.translate(unit.x, unit.y);
-          
+
           const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
           this.ctx.strokeStyle = `rgba(255, 50, 50, ${pulse})`;
           this.ctx.lineWidth = 2;
           this.ctx.setLineDash([]);
-          
+
           // Draw crosshair
           this.ctx.beginPath();
           this.ctx.moveTo(-15, 0);
@@ -1592,7 +1923,7 @@ class Battle {
           this.ctx.moveTo(0, 15);
           this.ctx.lineTo(0, 5);
           this.ctx.stroke();
-          
+
           // Draw target count
           if (targetingUnits.length > 1) {
             this.ctx.fillStyle = "rgba(255, 50, 50, 0.9)";
@@ -1600,7 +1931,7 @@ class Battle {
             this.ctx.textAlign = "center";
             this.ctx.fillText(`×${targetingUnits.length}`, 0, 25);
           }
-          
+
           this.ctx.restore();
         }
       }
@@ -1693,9 +2024,11 @@ class Battle {
 
   updateUnitInfo() {
     const infoDiv = document.getElementById("unitInfo");
-    
+
     // Get all selected units
-    const selectedUnits = this.units.filter(u => u.team === "player" && u.selected && !u.isDead);
+    const selectedUnits = this.units.filter(
+      (u) => u.team === "player" && u.selected && !u.isDead
+    );
 
     if (selectedUnits.length === 0) {
       infoDiv.innerHTML = "<p>No unit selected</p>";
@@ -1714,23 +2047,25 @@ class Battle {
     } else {
       // Show group info
       this.selectedUnit = selectedUnits[0]; // Keep reference to first unit
-      
+
       // Count unit types
-      const infantry = selectedUnits.filter(u => u.type === "infantry").length;
-      const archers = selectedUnits.filter(u => u.type === "archers").length;
-      const cavalry = selectedUnits.filter(u => u.type === "cavalry").length;
-      
+      const infantry = selectedUnits.filter(
+        (u) => u.type === "infantry"
+      ).length;
+      const archers = selectedUnits.filter((u) => u.type === "archers").length;
+      const cavalry = selectedUnits.filter((u) => u.type === "cavalry").length;
+
       // Calculate total/average health
       const totalHealth = selectedUnits.reduce((sum, u) => sum + u.health, 0);
       const maxHealth = selectedUnits.reduce((sum, u) => sum + u.maxHealth, 0);
       const avgHealthPercent = Math.round((totalHealth / maxHealth) * 100);
-      
+
       infoDiv.innerHTML = `
                 <p><strong>${selectedUnits.length} Units Selected</strong></p>
                 <p>Group Health: ${avgHealthPercent}%</p>
-                ${infantry > 0 ? `<p>🟦 Infantry: ${infantry}</p>` : ''}
-                ${archers > 0 ? `<p>🔺 Archers: ${archers}</p>` : ''}
-                ${cavalry > 0 ? `<p>⬡ Cavalry: ${cavalry}</p>` : ''}
+                ${infantry > 0 ? `<p>🟦 Infantry: ${infantry}</p>` : ""}
+                ${archers > 0 ? `<p>🔺 Archers: ${archers}</p>` : ""}
+                ${cavalry > 0 ? `<p>⬡ Cavalry: ${cavalry}</p>` : ""}
             `;
     }
   }
@@ -1743,7 +2078,10 @@ class Battle {
 }
 
 // Initialize game when page loads
-let battle;
+// Declare battle in global scope for onclick handlers
+var battle;
 window.addEventListener("DOMContentLoaded", () => {
   battle = new Battle();
+  // Make battle accessible globally for onclick handlers
+  window.battle = battle;
 });
