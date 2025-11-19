@@ -43,6 +43,8 @@
         color: white;
         min-width: 280px;
         max-width: 320px;
+        max-height: calc(100vh - 280px);
+        overflow-y: auto;
         backdrop-filter: blur(10px);
         box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
         z-index: 1000;
@@ -259,6 +261,20 @@
 
       .toggle-switch.active::after {
         left: 24px;
+      }
+
+      #info-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      #info-panel::-webkit-scrollbar-track {
+        background: rgba(99, 102, 241, 0.1);
+        border-radius: 3px;
+      }
+
+      #info-panel::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.5);
+        border-radius: 3px;
       }
 
       .action-buttons {
@@ -591,9 +607,13 @@
       .theme-icon-charges {
         position: absolute;
         top: 50%;
-        transform: translateY(-50%);
+        transform: translateY(calc(-50% - 1px));
         font-size: 1rem;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
       }
 
       .theme-icon-charges.sun {
@@ -617,17 +637,18 @@
       #theme-toggle-charges::before {
         content: "";
         position: absolute;
-        top: 4px;
+        top: 50%;
         left: 4px;
         width: 24px;
         height: 24px;
         background: linear-gradient(135deg, #6366f1, #8b5cf6);
         border-radius: 50%;
+        transform: translateY(-50%);
         transition: transform 0.3s ease;
       }
 
       [data-theme="light"] #theme-toggle-charges::before {
-        transform: translateX(28px);
+        transform: translateX(28px) translateY(-50%);
       }
 
       @media (max-width: 768px) {
@@ -677,6 +698,23 @@
             <strong>Try</strong> preset scenarios for common configurations
           </li>
         </ul>
+        <div
+          style="
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(99, 102, 241, 0.15);
+            border-radius: 8px;
+            text-align: left;
+          "
+        >
+          <strong style="color: #a0a0ff">💡 Understanding the Arrows:</strong>
+          <p style="margin: 8px 0 0 0; font-size: 0.9em; line-height: 1.6">
+            The cyan arrows show the <strong>direction</strong> of the electric
+            field. They point <strong>away</strong> from positive charges (red)
+            and <strong>toward</strong> negative charges (blue), indicating
+            which way a positive test charge would be pushed.
+          </p>
+        </div>
         <button id="get-started-btn">Get Started</button>
       </div>
     </div>
@@ -742,6 +780,26 @@
             <span>Field Lines</span>
             <div class="toggle-switch active" data-toggle="field-lines"></div>
           </div>
+        </div>
+        <div
+          style="
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid rgba(99, 102, 241, 0.5);
+            font-size: 0.75em;
+            color: #c0c0ff;
+            line-height: 1.5;
+          "
+        >
+          <strong style="color: #a0a0ff; display: block; margin-bottom: 4px">
+            💡 About the Arrows:
+          </strong>
+          Cyan arrows show field <strong>direction</strong>: point
+          <strong>away</strong> from positive (red),
+          <strong>toward</strong> negative (blue). Shows which way a positive
+          test charge would move.
         </div>
       </div>
 
